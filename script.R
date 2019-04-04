@@ -87,7 +87,7 @@ head(tree1.pred)
 tree1.cm <- table(true=test.data$HighSales, predicted=tree1.pred)
 tree1.cm
 
-# create a funciton for computing evaluation metrix
+# function for computing evaluation metrix
 compute.eval.metrics <- function(cmatrix) {
   TP <- cmatrix[1,1] # true positive
   TN <- cmatrix[2,2] # true negative

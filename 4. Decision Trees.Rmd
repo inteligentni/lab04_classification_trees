@@ -1,7 +1,8 @@
 ---
 title: "Decision trees"
 output:
-  pdf_document: default
+  pdf_document:
+    fig_caption: yes
 urlcolor: blue
 ---
 
@@ -93,9 +94,9 @@ We'll use 80% of all the observations for training and the rest for testing.
 ```{r}
 # create train and test datasets
 set.seed(10)
-train.indices <- createDataPartition(Carseats$HighSales, # the variable defining the class
+train.indices <- createDataPartition(Carseats$HighSales, # the class variable
                                      p = .80,            # the proportion of observations in the training set
-                                     list = FALSE)       # do not return the result as a list (which is the default)
+                                     list = FALSE)       # do not return the result as a list
 train.data <- Carseats[train.indices,]
 test.data <- Carseats[-train.indices,]
 ```
@@ -173,7 +174,7 @@ head(tree1.pred)
 
 To start evaluating the prediction quality of our model, we will first create the confusion matrix. The **confusion matrix** is used for visualizing and calculating the performance of a classification model. Each row of the matrix represents the instances in an actual class, while each column represents the instances in a predicted class (or vice versa).
 
-```{r knitr-logo, fig.align='center', echo=FALSE, out.width = "400px"}
+```{r fig.align='center', echo=FALSE, out.width = "400px", fig.cap="\\label{fig:figs}Confusion Matrix"}
 knitr::include_graphics('images/confusion-matrix.png')
 ```
 
@@ -187,32 +188,43 @@ tree1.cm
 
 There are several measures used for used for evaluating the performance of a classification model.
 
-**Accuracy** is defined as the percentage of correct predictions. Informally, accuracy is the fraction of predictions our model got right. The formula is:
-
-$$Accuracy = \frac{True~Positive + True~Negative}{N}$$
-
-, where N is the total number of predictions.
-
 **Precision** tells us how precise our model is, that is out of observations that are predicted positive, how many of them are actually positive. The formula is: 
 
 $$Precision = \frac{True~Positive}{True~Positive + False~Positive}$$
 
 Precision is a good measure to use in a model where the costs of False Positive is high. For instance, in email spam detection, a False Positive means that an email that is non-spam (actual negative) has been identified as spam (predicted spam). The email user might lose important emails if the precision is not high for the spam detection model.
 
-**Recall** calculates how many of the actual positives our model capture through labeling it as positive (True Positive). The formula is: 
+**Recall** (also known as *sensitivity*) calculates how many of the actual positives our model capture through labeling it as positive (True Positive). The formula is: 
 
 $$Recall = \frac{True~Positive}{True~Positive + False~Negative}$$
 
 Recall is important in a model when there is a high cost associated with False Negatives. For instance, in a sick patient detection problem, if a sick patient (actual positive) goes through the test and predicted as not sick (predicted negative). The cost associated with False Negative will be extremely high if the sickness is contagious.
 
+
+Suppose we have a classifier for recognizing dogs in photographs. And in a picture containing 12 dogs and some cats, the classifier identifies 8 dogs (Fig. 2). Of the 8 identified as dogs, 5 actually are dogs (True Positives), while the rest are cats (False Positives). The program's precision is 5/8 while its recall is 5/12.
+
+```{r fig.align='center', echo=FALSE, out.width = "400px", fig.cap="\\label{fig:figs}Precision and recall [1]"}
+knitr::include_graphics('images/PrecisionRecall.png')
+```
+
+Two other important evaluation measures ar *Accuracy* and *F1-measure*.
+
+**Accuracy** is defined as the percentage of correct predictions. Informally, accuracy is the fraction of predictions our model got right. The formula is:
+
+$$Accuracy = \frac{True~Positive + True~Negative}{N}$$
+
+, where N is the total number of predictions.
+
 **F1-measure** conveys the balance between the Precision and the Recall. The formula is: 
 
 $$F1 = 2 * \frac{Precision * Recall}{Precision + Recall}$$
 
+
+
 Since we'll need to compute evaluation metrics couple of times, it's handy to have a function for that. The f. receives a confusion matrix, and returns a named vector with the values for Accuracy, Precision, Recall, and F1-measure.
 
 ```{r}
-# create a funciton for computing evaluation metrix
+# function for computing evaluation metrix
 compute.eval.metrics <- function(cmatrix) {
   TP <- cmatrix[1,1] # true positive
   TN <- cmatrix[2,2] # true negative
@@ -305,6 +317,7 @@ Instead of relying on guessing, we should adopt a systematic way of examining th
 We will apply that approach here, testing the value of the *cp* parameter since it is considered the most important parameter when growing trees with the *rpart* function.
 
 For finding the optimal *cp* value through cross-validation, we will use some handy functions from the **caret** package (it has already been loaded). Since these functions internally call cross-validation functions from the **e1071** package, we need to (install and) load that package.
+
 ```{r message=FALSE}
 # load e1071 library
 # install.packages('e1071')
@@ -312,10 +325,10 @@ library(e1071)
 ```
 
 ```{r}
-# define cross-validation (cv) parameters; we'll do 10-fold cross-validation
+# define cross-validation (cv) parameters; we'll perform 10-fold cross-validation
 numFolds = trainControl( method = "cv", number = 10 )
 
-# then, define the range of the cp values to examine in the cross-validation
+# define the range for the cp values to examine in the cross-validation
 cpGrid = expand.grid( .cp = seq(0.001, to = 0.05, by = 0.001)) 
 ```
 
@@ -382,3 +395,7 @@ data.frame(rbind(tree1.eval, tree2.eval, tree3.eval),
 The 2nd and the 3rd model have the same accuracy but differ in terms of precision and recall. To look for a better model, we might consider altering some other parameters. Another option is to reduce the number of variables that are used for model building.
 
 **TASK**: Create a new tree (tree4) by using only variables that proved relevant in the previous models (tree1, tree2, tree3). Evaluate the model on the test set and compare the evaluation metrics with those obtained for the previous three models.
+
+# References
+
+[1] Precision and recall. (n.d.). Retrieved April 4, 2019, from https://en.wikipedia.org/wiki/Precision_and_recall
