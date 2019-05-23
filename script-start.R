@@ -1,5 +1,5 @@
 ##########################
-# Decision trees
+# Classification trees
 ##########################
 
 # load ISLR package
@@ -48,9 +48,9 @@
 # print distributions of train and test datasets
 
 
-##################################################
-# Create a prediction model using Decision Trees
-##################################################
+#######################################################
+# Create a prediction model using Classification Trees
+#######################################################
 
 # load rpart library
 

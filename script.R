@@ -1,5 +1,5 @@
 ##########################
-# Decision trees
+# Classification trees
 ##########################
 
 # load ISLR package
@@ -57,9 +57,9 @@ test.data <- Carseats[-train.indices,]
 prop.table(table(train.data$HighSales))
 prop.table(table(test.data$HighSales))
 
-##################################################
-# Create a prediction model using Decision Trees
-##################################################
+#######################################################
+# Create a prediction model using Classification Trees
+#######################################################
 
 # load rpart library
 library(rpart)

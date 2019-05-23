@@ -1,5 +1,5 @@
 ---
-title: "Decision trees"
+title: "Classification Trees"
 output:
   pdf_document:
     fig_caption: yes
@@ -109,11 +109,11 @@ prop.table(table(train.data$HighSales))
 prop.table(table(test.data$HighSales))
 ```
 
-# Create a prediction model using Decision Trees
+# Create a prediction model using Classification Trees
 
-We will use the **rpart** R package to build a decision tree.
+We will use the **rpart** R package to build a classification tree.
 
-Note: this is just one of the available R packages for working with decision trees.
+Note: this is just one of the available R packages for working with classification trees.
 
 ```{r message=FALSE}
 # load rpart library
