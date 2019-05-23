@@ -1,5 +1,5 @@
 ##########################
-# Decision trees
+# Classification trees
 ##########################
 
 # load ISLR package
@@ -57,9 +57,9 @@ test.data <- Carseats[-train.indices,]
 prop.table(table(train.data$HighSales))
 prop.table(table(test.data$HighSales))
 
-##################################################
-# Create a prediction model using Decision Trees
-##################################################
+#######################################################
+# Create a prediction model using Classification Trees
+#######################################################
 
 # load rpart library
 library(rpart)
@@ -87,7 +87,7 @@ head(tree1.pred)
 tree1.cm <- table(true=test.data$HighSales, predicted=tree1.pred)
 tree1.cm
 
-# create a funciton for computing evaluation metrix
+# function for computing evaluation metrix
 compute.eval.metrics <- function(cmatrix) {
   TP <- cmatrix[1,1] # true positive
   TN <- cmatrix[2,2] # true negative
