@@ -1,6 +1,7 @@
 ---
 title: "Classification Trees"
 output:
+  word_document: default
   pdf_document:
     fig_caption: yes
 urlcolor: blue
@@ -17,7 +18,7 @@ For this lab, we will use the *Carseats* data set from the *ISLR* package.
 library(ISLR)
 ```
 
-Carseats is a simulated data set containing sales of child car seats at 400 different stores. To inform about this data set, type *?Carseats*.
+Carseats is a simulated data set containing data about sales of child car seats at 400 different stores. To inform about this data set, type *?Carseats*.
 
 ```{r}
 # get the Carseats dataset docs
@@ -27,18 +28,18 @@ Carseats is a simulated data set containing sales of child car seats at 400 diff
 We'll start by examining the structure of the data set.
 
 ```{r}
-# print dataset structure
+# examine dataset structure
 str(Carseats)
 ```
 
 Based on the *Sales* variable, we'll add a new categorical (factor) variable to be used for classification.
 
 ```{r}
-# print Sales variable distribution
+# examine Sales variable distribution
 summary(Carseats$Sales)
 ```
 
-Name the new variable *HighSales* and define it as a factor with two values: 'Yes' if *Sales* value is greater than the 3rd quartile (9.32), and 'No' otherwise.
+Name the new variable *HighSales* and define it as a factor with two values: 'Yes' if *Sales* value is greater than the 3rd quartile, and 'No' otherwise.
 
 ```{r}
 # get the 3rd quartile of the Sales variable
@@ -46,9 +47,9 @@ sales.3Q <- quantile(Carseats$Sales, 0.75)
 
 # create a new variable HighSales based on the value of the Sales variable
 Carseats$HighSales <- ifelse(test = Carseats$Sales > sales.3Q, yes = 'Yes', no = 'No')
-head(Carseats)
+head(Carseats[,c('Sales', 'HighSales')])
 
-# class of the HighSales variable
+# check the type of the HighSales variable
 class(Carseats$HighSales)
 ```
 
@@ -66,24 +67,24 @@ Let's check the distribution of the two values.
 # get the distribution of the HighSales variable
 table(Carseats$HighSales)
 
-# get the proportions of the HighSales variable
+# examine the distribution through proportions
 prop.table(table(Carseats$HighSales))
 ```
 
-So, in 75.25% of shops, the company have not achieved high sales.
+So, in 75.25% of shops, the company did not achieve high sales.
 
-The objective is to develop a model that would be able to predict if the company will have a large sale in a certain shop. More precisely, the company is interested in spotting shops where high sales are not expected, so that it can take some interventions to improve sales. This means that the class we are particularly interested in (the so-called 'positive class') is *No*.
+The objective is to develop a model that would be able to predict if the company will have a large sale in a certain shop. More precisely, the company is interested in spotting shops where high sales are not expected, so that it can take some interventions to improve sales. This means that the class we are particularly interested in - the so-called *positive class* is No.
 
 # Create train and test datasets
 
-Remove the *Sales* variable as we do not need it anymore.
+Remove the *Sales* variable as we do not need it anymore - since it was used for creating the outcome variable, it cannot be used as a predictor.
 
 ```{r}
 # remove Sales variable
 Carseats$Sales <- NULL
 ```
 
-We should randomly select observations for training and testing. We should also assure that the distribution of the output variable (*HighSales*) is the same in both datasets (train and test); this is referred to as *stratified partitioning*. To do that easily, we'll use appropriate functions from the **caret** package.
+We should randomly select observations for training and testing. We should also assure that the distribution of the output variable (*HighSales*) is the same in both datasets (train and test); this is referred to as *stratified partitioning*. To do that easily, we'll use appropriate functions from the *caret* package.
 ```{r message=FALSE}
 # load caret package
 library(caret)
@@ -104,7 +105,7 @@ test.data <- Carseats[-train.indices,]
 We can check that the distribution of *HighSales* is really (roughly) the same in the two datasets.
 
 ```{r}
-# print distributions of train and test datasets
+# print distributions of the outcome variable on the train and test datasets
 prop.table(table(train.data$HighSales))
 prop.table(table(test.data$HighSales))
 ```
@@ -123,6 +124,11 @@ library(rpart)
 Build a tree using the *rpart* function and all the variables.
 
 ```{r}
+?rpart
+```
+
+
+```{r}
 # build the model
 tree1 <- rpart(HighSales ~ ., data = train.data, method = "class")
 ```
@@ -134,7 +140,7 @@ Note the parameter *method*; it is set to the "class" value as we are building a
 print(tree1)
 ```
 
-Let's plot the tree, to understand it better. To that end, we will use the **prp** function from the **rpart.plot** package.
+Let's plot the tree, to understand it better. To that end, we will use the **rpart.plot** package.
 
 ```{r message=FALSE}
 # load rpart.plot library
@@ -146,18 +152,12 @@ Plot the tree.
 
 ```{r}
 # plot the tree
-prp(tree1, type = 3, extra = 1)
+rpart.plot(tree1)
 ```
 
-**TASK**: Check the other options of the type and extra parameters to see how they affect the visualization of the tree model.
+**TASK**: Check the type and extra parameters of the rpart.plot() function to see how they affect the visualization of the tree model.
 
-Observing the tree, we can see that only a couple of variables were used to build the model: 
-
-* ShelveLo - the quality of the shelving location for the car seats at a given site
-* Price - the price the company charges for car seats at a given site
-* Advertise - local advertising budget for the company at each location
-* Age - the average age of the local population
-* CompPrice - price charged by competitors at each location
+Observing the tree, we can see that seven (out of eleven) variables were used to build the model including ShelveLoc, Price, Advertising, US, etc.
 
 Let's evaluate our model on the test set.
 ```{r}
@@ -172,13 +172,13 @@ Examine what the predictions look like.
 head(tree1.pred)
 ```
 
-To start evaluating the prediction quality of our model, we will first create the confusion matrix. The **confusion matrix** is used for visualizing and calculating the performance of a classification model. Each row of the matrix represents the instances in an actual class, while each column represents the instances in a predicted class (or vice versa).
+To start evaluating the predictive quality of our model, we will first create the confusion matrix. The **confusion matrix** is used for visualizing and calculating the performance of a classification model. Each row of the matrix represents the instances in an actual class, while each column represents the instances in a predicted class (or vice versa).
 
 ```{r fig.align='center', echo=FALSE, out.width = "400px", fig.cap="\\label{fig:figs}Confusion Matrix"}
 knitr::include_graphics('images/confusion-matrix.png')
 ```
 
-In our example, this is the confusion matrix:
+In our example, this is the confusion matrix (recall that we set 'No' as the positive class):
 
 ```{r}
 # create the confusion matrix
@@ -188,26 +188,23 @@ tree1.cm
 
 There are several measures used for used for evaluating the performance of a classification model.
 
-**Precision** tells us how precise our model is, that is out of observations that are predicted positive, how many of them are actually positive. The formula is: 
+**Precision** tells us how precise our model is, that is, what proportion of observations that are predicted as positive (= belonging to the positive class) are actually positive. The formula is: 
 
 $$Precision = \frac{True~Positive}{True~Positive + False~Positive}$$
 
-Precision is a good measure to use in a model where the costs of False Positive is high. For instance, in email spam detection, a False Positive means that an email that is non-spam (actual negative) has been identified as spam (predicted spam). The email user might lose important emails if the precision is not high for the spam detection model.
+Precision is a good measure to use in a model where the 'cost' of False Positive is high. For instance, in email spam detection, a False Positive means that an email that is non-spam (actual negative) has been identified as spam (predicted positive). The email user might miss important emails if the precision is not high for the spam detection model.
 
-**Recall** (also known as *sensitivity*) calculates how many of the actual positives our model capture through labeling it as positive (True Positive). The formula is: 
+**Recall** (also known as *sensitivity*) tells us what proportion of observations that are actually positive (= belong to the positive class) were predicted as positive. The formula is: 
 
 $$Recall = \frac{True~Positive}{True~Positive + False~Negative}$$
 
-Recall is important in a model when there is a high cost associated with False Negatives. For instance, in a sick patient detection problem, if a sick patient (actual positive) goes through the test and predicted as not sick (predicted negative). The cost associated with False Negative will be extremely high if the sickness is contagious.
+Recall is important in a model when there is a high 'cost' associated with False Negatives. For instance, in a sick patient detection problem, if a sick patient (actual positive) is classified as not sick (predicted negative). The cost associated with False Negative will be extremely high if the sickness is contagious.
 
 
-Suppose we have a classifier for recognizing dogs in photographs. And in a picture containing 12 dogs and some cats, the classifier identifies 8 dogs (Fig. 2). Of the 8 identified as dogs, 5 actually are dogs (True Positives), while the rest are cats (False Positives). The program's precision is 5/8 while its recall is 5/12.
+To illustrate these measures, suppose we have a classifier for recognizing dogs in photographs. And in a picture containing 12 dogs and some cats, the classifier identifies 8 dogs. Of the 8 identified as dogs, 5 actually are dogs (True Positives), while the rest are cats (False Positives). The program's precision is 5/8 while its recall is 5/12.
 
-```{r fig.align='center', echo=FALSE, out.width = "400px", fig.cap="\\label{fig:figs}Precision and recall [1]"}
-knitr::include_graphics('images/PrecisionRecall.png')
-```
 
-Two other important evaluation measures ar *Accuracy* and *F1-measure*.
+Two other important evaluation measures are *Accuracy* and *F1-measure*.
 
 **Accuracy** is defined as the percentage of correct predictions. Informally, accuracy is the fraction of predictions our model got right. The formula is:
 
@@ -219,12 +216,17 @@ $$Accuracy = \frac{True~Positive + True~Negative}{N}$$
 
 $$F1 = 2 * \frac{Precision * Recall}{Precision + Recall}$$
 
+The need for balancing Precision and Recall stems from the fact that Precision and Recall are in a kind of 'antagonistic' relation: whenever we try to improve precision, we negatively affect recall and vice versa (see figure below). Hence, there was a need for a measure (F1-measure) that would give us a way to evaluate how well balanced Precision and Recall are. 
+
+```{r fig.align='center', echo=FALSE, out.width = "400px", fig.cap="\\label{fig:figs}Precision-Recall curve"}
+knitr::include_graphics('images/Precision_Recall_tradeoff.jpeg')
+```
 
 
 Since we'll need to compute evaluation metrics couple of times, it's handy to have a function for that. The f. receives a confusion matrix, and returns a named vector with the values for Accuracy, Precision, Recall, and F1-measure.
 
 ```{r}
-# function for computing evaluation metrix
+# function for computing evaluation measures
 compute.eval.metrics <- function(cmatrix) {
   TP <- cmatrix[1,1] # true positive
   TN <- cmatrix[2,2] # true negative
@@ -275,7 +277,7 @@ Obviously, we got a significantly larger tree. Let's plot this tree.
 
 ```{r}
 # plot the tree2
-prp(tree2, type = 3, extra = 1)
+rpart.plot(tree2)
 ```
 
 Is this larger tree better than the initial one (tree1)? To check that, we need to evaluate the 2nd tree on the test set.
@@ -305,16 +307,21 @@ Let's compare this model to the first one:
 ```{r}
 # compare the evaluation metrics for tree1 and tree2
 data.frame(rbind(tree1.eval, tree2.eval), 
-           row.names = c("tree 1", "tree 2"))
+           row.names = c("tree_1", "tree_2"))
 ```
 
-Some metrics have improved, others became worse. So, our guess for the parameter values was not the best one.
+The metrics show worse performance on the new model compared to the initial one - the new model is obviously overly complex and overfitted to the training data. 
+So, our guess for the parameter values was not good and we have to choose wiser.
 
-Instead of relying on guessing, we should adopt a systematic way of examining the parameters values, looking for the optimal ones. An often applied approach is to cross-validate the model with a range of different values of parameters of interest.
+Instead of relying on guessing, we should adopt a systematic way of examining the parameters values, looking for the optimal ones. An often applied approach is to perform cross-validation with a range of different values of parameters of interest.
 
-**Cross-validation** is a model validation technique for assessing how the results of statistical analysis (in our case classification) will generalize to an independent data set. The goal of cross-validation is to test the model's ability to predict new data that was not used in estimating it. It involves partitioning a dataset into complementary subsets, performing the analysis on one subset (called the training set), and validating the analysis on the other subset (called the validation set or testing set). In *10-fold cross-validation*, the original dataset is randomly partitioned into 10 equal sized subsamples.
+**Cross-validation** is a model validation technique for assessing how well the model will generalize on an independent data set. It involves partitioning a dataset into *k* complementary equal-size subsets, using *k-1* subsets for model building and one subset for validation, and repeating this procedure *k* times, so that each time different subset is used for validation (and the rest of the subsets for training). Typically, *k* is set to 10, in which case we talk about *10-fold cross-validation* (see figure below).
 
-We will apply that approach here, testing the value of the *cp* parameter since it is considered the most important parameter when growing trees with the *rpart* function.
+```{r fig.align='center', echo=FALSE, out.width = "400px", fig.cap="\\label{fig:figs}10-fold cross-validation"}
+knitr::include_graphics('images/10_fold_CV.png')
+```
+
+We will apply that approach here, tuning the value of the *cp* parameter since it is considered the most important parameter when growing trees with the *rpart* function.
 
 For finding the optimal *cp* value through cross-validation, we will use some handy functions from the **caret** package (it has already been loaded). Since these functions internally call cross-validation functions from the **e1071** package, we need to (install and) load that package.
 
@@ -329,18 +336,18 @@ library(e1071)
 numFolds = trainControl( method = "cv", number = 10 )
 
 # define the range for the cp values to examine in the cross-validation
-cpGrid = expand.grid( .cp = seq(0.001, to = 0.05, by = 0.001)) 
+cpGrid = expand.grid( .cp = seq(0.001, to = 0.05, by = 0.0025)) 
 ```
 
 Perform parameter search through cross-validation.
 
 ```{r}
-# since cross-validation is a probabilistic process, it is advisable to set the seed so that we can replicate the results
+# since cross-validation is a probabilistic process, we need to set the seed so that the results can be replicated 
 set.seed(10)
 
 # run the cross-validation
-dt.cv <- train(HighSales ~ ., 
-               data = train.data, 
+dt.cv <- train(x = train.data[,-11], 
+               y = train.data$HighSales, 
                method = "rpart", 
                control = rpart.control(minsplit = 10), 
                trControl = numFolds, 
@@ -355,14 +362,15 @@ Plot the results of parameter tuning.
 plot(dt.cv)
 ```
 
-So, we got the best value for the *cp* parameter: 0.041. Since it suggests a simpler model (smaller tree) than the previous one (tree2), we can **prune** the second tree using this *cp* value.
+So, we got the best value for the *cp* parameter: `r dt.cv$bestTune$cp`. Since it suggests a simpler model (smaller tree) than the previous one (tree2), we can **prune** the second tree using this *cp* value.
 
 ```{r}
-# prune the tree2 using the cp = 0.041
-tree3 <- prune(tree2, cp = 0.041)
+# prune the tree2 using the new cp value
+optimal_cp <- dt.cv$bestTune$cp
+tree3 <- prune(tree2, cp = optimal_cp)
 
-# print the new tree
-print(tree3)
+# plot the new tree
+rpart.plot(tree3)
 ```
 
 Create predictions for the *tree3*.
@@ -371,7 +379,7 @@ Create predictions for the *tree3*.
 # make the predictions with tree3 over the test dataset
 tree3.pred <- predict(tree3, newdata = test.data, type = "class")
 
-# create the confusion matrix for tree2 predictions
+# create the confusion matrix for tree3 predictions
 tree3.cm <- table(true = test.data$HighSales, predicted = tree3.pred)
 tree3.cm
 ```
@@ -389,13 +397,10 @@ Let's compare all 3 models we have built so far.
 ```{r}
 # compare the evaluation metrics for tree1, tree2 and tree3
 data.frame(rbind(tree1.eval, tree2.eval, tree3.eval),
-           row.names = c(paste("tree", 1:3)))
+           row.names = c(paste("tree", 1:3, sep = "_")))
 ```
 
 The 2nd and the 3rd model have the same accuracy but differ in terms of precision and recall. To look for a better model, we might consider altering some other parameters. Another option is to reduce the number of variables that are used for model building.
 
 **TASK**: Create a new tree (tree4) by using only variables that proved relevant in the previous models (tree1, tree2, tree3). Evaluate the model on the test set and compare the evaluation metrics with those obtained for the previous three models.
 
-# References
-
-[1] Precision and recall. (n.d.). Retrieved April 4, 2019, from https://en.wikipedia.org/wiki/Precision_and_recall
