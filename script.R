@@ -9,10 +9,10 @@ library(ISLR)
 # get the Carseats dataset docs
 ?Carseats
 
-# print dataset structure
+# examine dataset structure
 str(Carseats)
 
-# print Sales variable distribution
+# examine Sales variable distribution
 summary(Carseats$Sales)
 
 # get the 3rd quartile of the Sales variable
@@ -22,7 +22,7 @@ sales.3Q <- quantile(Carseats$Sales, 0.75)
 Carseats$HighSales <- ifelse(test = Carseats$Sales > sales.3Q, yes = 'Yes', no = 'No')
 head(Carseats)
 
-# class of the HighSales variable
+# check the type of the HighSales variable
 class(Carseats$HighSales)
 
 # convert HighSales into a factor variable
@@ -32,7 +32,6 @@ head(Carseats$HighSales)
 # get the distribution of the HighSales variable
 table(Carseats$HighSales)
 
-# get the proportions of the HighSales variable
 prop.table(table(Carseats$HighSales))
 
 ##################################
@@ -53,7 +52,7 @@ train.indices <- createDataPartition(Carseats$HighSales, # the variable defining
 train.data <- Carseats[train.indices,]
 test.data <- Carseats[-train.indices,]
 
-# print distributions of train and test datasets
+# print distributions of the outcome variable on train and test datasets
 prop.table(table(train.data$HighSales))
 prop.table(table(test.data$HighSales))
 
@@ -75,7 +74,7 @@ print(tree1)
 library(rpart.plot)
 
 # plot the tree
-prp(tree1, type = 3, extra = 1)
+rpart.plot(tree1)
 
 # make the predictions with tree1 over the test dataset
 tree1.pred <- predict(object = tree1, newdata = test.data, type = "class")
@@ -87,7 +86,7 @@ head(tree1.pred)
 tree1.cm <- table(true=test.data$HighSales, predicted=tree1.pred)
 tree1.cm
 
-# function for computing evaluation metrix
+# function for computing evaluation measures
 compute.eval.metrics <- function(cmatrix) {
   TP <- cmatrix[1,1] # true positive
   TN <- cmatrix[2,2] # true negative
@@ -108,14 +107,16 @@ tree1.eval
 ?rpart.control
 
 # build the second model with minsplit = 10 and cp = 0.001
-tree2 <- rpart(HighSales ~ ., data = train.data, method = "class",
-control = rpart.control(minsplit = 10, cp = 0.001))
+tree2 <- rpart(HighSales ~ ., 
+               data = train.data, 
+               method = "class",
+               control = rpart.control(minsplit = 10, cp = 0.001))
 
 # print the model
 print(tree2)
 
 # plot the tree2
-prp(tree2, type = 3, extra = 1)
+rpart.plot(tree2)
 
 # make the predictions with tree2 over the test dataset
 tree2.pred <- predict(tree2, newdata = test.data, type = "class")
@@ -130,7 +131,7 @@ tree2.eval
 
 # compare the evaluation metrics for tree1 and tree2
 data.frame(rbind(tree1.eval, tree2.eval), 
-row.names = c("tree 1", "tree 2"))
+row.names = c("tree_1", "tree_2"))
 
 # load e1071 library
 # install.packages('e1071')
@@ -140,14 +141,15 @@ library(e1071)
 numFolds = trainControl( method = "cv", number = 10 )
 
 # then, define the range of the cp values to examine in the cross-validation
-cpGrid = expand.grid( .cp = seq(0.001, to = 0.05, by = 0.001)) 
+cpGrid = expand.grid( .cp = seq(0.001, to = 0.05, by = 0.0025)) 
 
-# since cross-validation is a probabilistic process, it is advisable to set the seed so that we can replicate the results
+# since cross-validation is a probabilistic process, we need to set the seed 
+# so that the results can be replicated
 set.seed(10)
 
 # run the cross-validation
-dt.cv <- train(HighSales ~ ., 
-               data = train.data, 
+dt.cv <- train(x = train.data[,-11], 
+               y = train.data$HighSales, 
                method = "rpart", 
                control = rpart.control(minsplit = 10), 
                trControl = numFolds, 
@@ -157,16 +159,19 @@ dt.cv
 # plot the cross-validation results
 plot(dt.cv)
 
-# prune the tree2 using the cp = 0.041
-tree3 <- prune(tree2, cp = 0.041)
 
-# print the new tree
-print(tree3)
+# prune the tree2 using the new cp value
+optimal_cp <- dt.cv$bestTune$cp
+tree3 <- prune(tree2, cp = optimal_cp)
+
+# plot the new tree
+rpart.plot(tree3)
+
 
 # make the predictions with tree3 over the test dataset
 tree3.pred <- predict(tree3, newdata = test.data, type = "class")
 
-# create the confusion matrix for tree2 predictions
+# create the confusion matrix for tree3 predictions
 tree3.cm <- table(true = test.data$HighSales, predicted = tree3.pred)
 tree3.cm
 
@@ -176,4 +181,4 @@ tree3.eval
 
 # compare the evaluation metrics for tree1, tree2 and tree3
 data.frame(rbind(tree1.eval, tree2.eval, tree3.eval),
-           row.names = c(paste("tree", 1:3)))
+           row.names = c(paste("tree", 1:3, sep = '_')))
