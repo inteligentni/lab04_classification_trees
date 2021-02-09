@@ -45,7 +45,7 @@ Carseats$Sales <- NULL
 library(caret)
 
 # create train and test datasets
-set.seed(10)
+set.seed(7)
 train.indices <- createDataPartition(Carseats$HighSales, # the variable defining the class
                                      p = .80,            # the proportion of observations in the training set
                                      list = FALSE)       # do not return the result as a list (which is the default)
@@ -63,6 +63,8 @@ prop.table(table(test.data$HighSales))
 # load rpart library
 library(rpart)
 
+# rpart uses random sampling, so, we have to set the seed value before calling the function
+set.seed(7)
 # build the model
 tree1 <- rpart(HighSales ~ ., data = train.data, method = "class")
 
@@ -107,6 +109,7 @@ tree1.eval
 ?rpart.control
 
 # build the second model with minsplit = 10 and cp = 0.001
+set.seed(7)
 tree2 <- rpart(HighSales ~ ., 
                data = train.data, 
                method = "class",
@@ -131,7 +134,7 @@ tree2.eval
 
 # compare the evaluation metrics for tree1 and tree2
 data.frame(rbind(tree1.eval, tree2.eval), 
-           row.names = c("tree_1", "tree_2"))
+row.names = c("tree_1", "tree_2"))
 
 # load e1071 library
 # install.packages('e1071')
@@ -145,13 +148,12 @@ cpGrid = expand.grid( .cp = seq(0.001, to = 0.05, by = 0.0025))
 
 # since cross-validation is a probabilistic process, we need to set the seed 
 # so that the results can be replicated
-set.seed(10)
+set.seed(7)
 
 # run the cross-validation
 dt.cv <- train(x = train.data[,-11], 
                y = train.data$HighSales, 
                method = "rpart", 
-               control = rpart.control(minsplit = 10), 
                trControl = numFolds, 
                tuneGrid = cpGrid)
 dt.cv
@@ -160,9 +162,11 @@ dt.cv
 plot(dt.cv)
 
 
-# prune the tree2 using the new cp value
+# create tree2 using the new cp value
 optimal_cp <- dt.cv$bestTune$cp
-tree3 <- prune(tree2, cp = optimal_cp)
+set.seed(7)
+tree3 <- rpart(HighSales ~ ., data = train.data, method = "class",
+               control = rpart.control(cp = optimal_cp))
 
 # plot the new tree
 rpart.plot(tree3)
