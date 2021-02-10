@@ -94,7 +94,7 @@ We'll use 80% of all the observations for training and the rest for testing.
 
 ```{r}
 # create train and test datasets
-set.seed(10)
+set.seed(7)
 train.indices <- createDataPartition(Carseats$HighSales, # the class variable
                                      p = .80,            # the proportion of observations in the training set
                                      list = FALSE)       # do not return the result as a list
@@ -129,6 +129,8 @@ Build a tree using the *rpart* function and all the variables.
 
 
 ```{r}
+# rpart uses random sampling, so, we have to set the seed value before calling the function
+set.seed(7)
 # build the model
 tree1 <- rpart(HighSales ~ ., data = train.data, method = "class")
 ```
@@ -212,11 +214,11 @@ $$Accuracy = \frac{True~Positive + True~Negative}{N}$$
 
 , where N is the total number of predictions.
 
-**F1-measure** conveys the balance between the Precision and the Recall. The formula is: 
+**F1-measure** conveys the model performance when Precision and Recall are balanced. The formula is: 
 
 $$F1 = 2 * \frac{Precision * Recall}{Precision + Recall}$$
 
-The need for balancing Precision and Recall stems from the fact that Precision and Recall are in a kind of 'antagonistic' relation: whenever we try to improve precision, we negatively affect recall and vice versa (see figure below). Hence, there was a need for a measure (F1-measure) that would give us a way to evaluate how well balanced Precision and Recall are. 
+The need for balancing Precision and Recall stems from the fact that Precision and Recall are in a kind of 'antagonistic' relation: whenever we try to improve precision, we negatively affect recall and vice versa (see figure below). Hence, there was a need for a measure (F1-measure) that would give us a way to evaluate our model when Precision and Recall are balanced. 
 
 ```{r fig.align='center', echo=FALSE, out.width = "400px", fig.cap="\\label{fig:figs}Precision-Recall curve"}
 knitr::include_graphics('images/Precision_Recall_tradeoff.jpeg')
@@ -248,7 +250,6 @@ tree1.eval <- compute.eval.metrics(tree1.cm)
 tree1.eval
 ```
 
-Not bad...
 
 The *rpart* function uses a number of parameters to control the growth of a tree. In the above call of the *rpart* function, we relied on the default values of those parameters. To inspect the parameters and their defaults, type:
 
@@ -266,6 +267,7 @@ We will decrease the values of both parameters to grow a larger tree.
 
 ```{r}
 # build the second model with minsplit = 10 and cp = 0.001
+set.seed(7)
 tree2 <- rpart(HighSales ~ ., data = train.data, method = "class",
                      control = rpart.control(minsplit = 10, cp = 0.001))
 
@@ -310,7 +312,7 @@ data.frame(rbind(tree1.eval, tree2.eval),
            row.names = c("tree_1", "tree_2"))
 ```
 
-The metrics show worse performance on the new model compared to the initial one - the new model is obviously overly complex and overfitted to the training data. 
+Except for the recall, the other metrics show worse performance on the new model compared to the initial one. The new model is obviously overly complex and overfitted to the training data. 
 So, our guess for the parameter values was not good and we have to choose wiser.
 
 Instead of relying on guessing, we should adopt a systematic way of examining the parameters values, looking for the optimal ones. An often applied approach is to perform cross-validation with a range of different values of parameters of interest.
@@ -343,13 +345,12 @@ Perform parameter search through cross-validation.
 
 ```{r}
 # since cross-validation is a probabilistic process, we need to set the seed so that the results can be replicated 
-set.seed(10)
+set.seed(7)
 
 # run the cross-validation
 dt.cv <- train(x = train.data[,-11], 
                y = train.data$HighSales, 
                method = "rpart", 
-               control = rpart.control(minsplit = 10), 
                trControl = numFolds, 
                tuneGrid = cpGrid)
 dt.cv
@@ -362,12 +363,14 @@ Plot the results of parameter tuning.
 plot(dt.cv)
 ```
 
-So, we got the best value for the *cp* parameter: `r dt.cv$bestTune$cp`. Since it suggests a simpler model (smaller tree) than the previous one (tree2), we can **prune** the second tree using this *cp* value.
+So, we got the best value for the *cp* parameter: `r dt.cv$bestTune$cp`. 
 
 ```{r}
-# prune the tree2 using the new cp value
+# create a new tree using the new cp value
 optimal_cp <- dt.cv$bestTune$cp
-tree3 <- prune(tree2, cp = optimal_cp)
+set.seed(7)
+tree3 <- rpart(HighSales ~ ., data = train.data, method = "class",
+               control = rpart.control(cp = optimal_cp))
 
 # plot the new tree
 rpart.plot(tree3)
@@ -400,7 +403,7 @@ data.frame(rbind(tree1.eval, tree2.eval, tree3.eval),
            row.names = c(paste("tree", 1:3, sep = "_")))
 ```
 
-The 2nd and the 3rd model have the same accuracy but differ in terms of precision and recall. To look for a better model, we might consider altering some other parameters. Another option is to reduce the number of variables that are used for model building.
+The 3rd model outperformed the other two on all the metrics except precision. To look for a better model, we might consider altering some other parameters. Another option is to reduce the number of variables that are used for model building.
 
 **TASK**: Create a new tree (tree4) by using only variables that proved relevant in the previous models (tree1, tree2, tree3). Evaluate the model on the test set and compare the evaluation metrics with those obtained for the previous three models.
 
